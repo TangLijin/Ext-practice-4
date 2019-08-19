@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" type="text/css" href="./ext-3.3.0/resources/css/ext-all.css" />
+    <script type="text/javascript" src="./ext-3.3.0/adapter/ext/ext-base.js"></script>
+    <script type="text/javascript" src="./ext-3.3.0/ext-all.js"></script>
+    <title>Blog</title>
+</head>
+<script>
+    Ext.onReady(function() {
+
+        Ext.QuickTips.init();
+
+        let toolBar = new Ext.Toolbar({
+            items: [{
+                text: 'Edit',
+                menu: [{
+                    text: 'Reset',
+                    handler: handleReset
+                }]
+            }, {
+                text: 'Insert',
+                menu: [{
+                    text: 'Table',
+                    handler: handleInsertTable
+                }]
+            }]
+        })
+
+        function handleReset() {
+            mainEditor.reset()
+        }
+
+        let tableInsertForm = new Ext.FormPanel({
+            frame: true,
+            items: [{
+                xtype: 'numberfield',
+                id: 'col',
+                fieldLabel: 'Cols',
+                minValue: 1,
+                allowBlank: false,
+                allowDecimals: false
+            }, {
+                xtype: 'numberfield',
+                id: 'row',
+                fieldLabel: 'Rows',
+                minValue: 1,
+                allowBlank: false,
+                allowDecimals: false
+            }],
+        })
+
+        let tableInsertWindow = new Ext.Window({
+            title: 'Add Table',
+            layout: 'fit',
+            width: 300,
+            height: 150,
+            items: [tableInsertForm],
+            bbar: [
+                '->', {
+                    text: 'Cancel'
+                },
+                '', {
+                    text: 'Add',
+                    handler: onTableInsert
+                }
+            ]
+        })
+
+        let tableXTemplate = new Ext.XTemplate(
+            `<table border="1" cellspacing="0"><tbody>`,
+            `<tpl for="rows">`,
+            `<tr>`,
+            `<tpl for=".">`,
+            `<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>`,
+            `</tpl>`,
+            `</tr>`,
+            `</tpl>`,
+            `</tbody></table>`,
+        )
+
+        function onTableInsert() {
+            let form = tableInsertForm.getForm();
+            let {
+                col,
+                row
+            } = form.getValues();
+            let colNum = parseInt(col),
+                rowNum = parseInt(row);
+            let data = {}
+            data.rows = Array(rowNum).fill(Array(colNum).fill("1"))
+            let html = tableXTemplate.apply(data)
+            mainEditor.setValue(mainEditor.getValue() + html)
+            form.reset();
+            tableInsertWindow.hide()
+        }
+
+        function handleInsertTable() {
+            tableInsertWindow.show()
+        }
+
+        let contextMenu = new Ext.menu.Menu({
+            items: [{
+                id: 'menu-edit',
+                text: 'Edit',
+                menu: [{
+                    text: 'Reset',
+                    handler: handleReset,
+                }]
+            }, {
+                id: 'menu-insert',
+                text: 'Insert',
+                menu: [{
+                    text: 'Table',
+                    handler: handleInsertTable
+                }]
+            }]
+        })
+
+        let progressBar = new Ext.ProgressBar({
+            text: 'Loading',
+            hidden: true
+        })
+
+        let progressWindow = new Ext.Window({
+            layout: 'fit',
+            height: 50,
+            width: 250,
+            resizable: false,
+            modal: true,
+            closable: false,
+            items: [progressBar]
+        })
+
+        let mainEditor = new Ext.form.HtmlEditor()
+
+        let panel = new Ext.FormPanel({
+            labelWidth: 0,
+            width: 800,
+            layout: 'fit',
+            tbar: toolBar,
+            items: [mainEditor],
+            bbar: [
+                '->', {
+                    text: '提交',
+                    handler: function() {
+                        progressWindow.show()
+                        progressBar.wait({
+                            duration: 3000,
+                            interval: 1000,
+                            increment: 3,
+                            text: 'Loading',
+                            fn: function() {
+                                Ext.Msg.alert('Result', 'Success');
+                                progressWindow.hide();
+                            }
+                        })
+                    }
+                }
+            ]
+        })
+
+        Ext.get(document).on(`contextmenu`, function(e) {
+            e.preventDefault();
+            contextMenu.showAt(e.getXY())
+        })
+
+        new Ext.Viewport({
+            items: [panel]
+        })
+    })
+</script>
+
+<body>
+
+</body>
+
+</html
